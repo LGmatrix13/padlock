@@ -1,4 +1,5 @@
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -26,8 +27,12 @@ def rsa_gen_keypair():
 #   PKCS-8 format and PEM encoding. Does not encrypt the key for at-rest
 #   storage.
 #
-def rsa_serialize_private_key(private_key):
-    raise Exception("You need to implement this function!")
+def rsa_serialize_private_key(private_key: rsa.RSAPrivateKey):
+    return private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()
+    ).decode("utf-8")
 
 #
 # Argument: A string containing an unencrypted RSA private key in PEM format.
