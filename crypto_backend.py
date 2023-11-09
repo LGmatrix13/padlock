@@ -3,6 +3,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_pem_private_key
 
 import secrets # Use this for generating random byte strings (keys, etc.)
 from time import perf_counter
@@ -42,9 +43,8 @@ def rsa_serialize_private_key(private_key: rsa.RSAPrivateKey):
 # Returns: An rsa.RSAPrivateKey object consisting of the deserialized key.
 #
 def rsa_deserialize_private_key(pem_privkey) -> rsa.RSAPrivateKey:
-    return 
+    return load_pem_private_key(pem_privkey, None)
 
-    raise Exception("You need to implement this function!")
 
 
 #
@@ -53,7 +53,7 @@ def rsa_deserialize_private_key(pem_privkey) -> rsa.RSAPrivateKey:
 # Returns: An ASCII/UTF-8 serialization of the public key using the
 #   SubjectPublicKeyInfo format and PEM encoding.
 #
-def rsa_serialize_public_key(public_key: rsa.RSAPublicKey) ->  rsa.RSAPublicKey:
+def rsa_serialize_public_key(public_key: rsa.RSAPublicKey) -> str:
     return public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo 
@@ -65,9 +65,7 @@ def rsa_serialize_public_key(public_key: rsa.RSAPublicKey) ->  rsa.RSAPublicKey:
 # Returns: An rsa.RSAPublicKey object consisting of the deserialized key.
 #
 def rsa_deserialize_public_key(pem_pubkey: str) -> rsa.RSAPublicKey:
-    
-    
-    raise Exception("You need to implement this function!")
+    return load_pem_public_key(pem_pubkey)
 
 #
 # Arguments:
@@ -77,8 +75,15 @@ def rsa_deserialize_public_key(pem_pubkey: str) -> rsa.RSAPublicKey:
 #
 # Returns: The encrypted message (ciphertext), as a raw byte string.
 #
-def rsa_encrypt(public_key, plaintext):
-    raise Exception("You need to implement this function!")
+def rsa_encrypt(public_key: rsa.RSAPublicKey, plaintext: bytes) -> bytes:
+    return public_key.encrypt(
+        plaintext,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
 
 #
 # Arguments:
@@ -88,8 +93,15 @@ def rsa_encrypt(public_key, plaintext):
 #
 # Returns: The decrypted message (plaintext), as a raw byte string.
 #
-def rsa_decrypt(private_key, ciphertext):
-    raise Exception("You need to implement this function!")
+def rsa_decrypt(private_key: rsa.RSAPrivateKey, ciphertext: str) -> str:
+    return private_key.decrypt(
+        ciphertext,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
 
 #
 # Encrypts a plaintext message using AES-256 in CTR (Counter) mode.
@@ -113,9 +125,12 @@ def rsa_decrypt(private_key, ciphertext):
 #
 # Returns: The encrypted message (ciphertext), as a raw byte string.
 #
-def aes_encrypt(key, nonce, plaintext):
-    raise Exception("You need to implement this function!")
-
+def aes_encrypt(key, nonce, plaintext: bytes) -> bytes:
+    cipher = Cipher(algorithms.AES(key), modes.CTR(nonce), backend=default_backend())
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+    return ciphertext
+    
 #
 # Decrypts a plaintext message using AES-256 in CTR (Counter) mode.
 #
