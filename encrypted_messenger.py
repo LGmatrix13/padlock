@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import binascii
 import PySimpleGUI as sg
 import json
 from base64 import b64encode, b64decode

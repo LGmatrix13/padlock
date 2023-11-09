@@ -8,6 +8,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key, lo
 import secrets # Use this for generating random byte strings (keys, etc.)
 from time import perf_counter
 from inspect import cleandoc # Cleans up indenting in multi-line strings (""")
+from os import urandom
 
 #
 # Returns: An rsa.RSAPrivateKey object (which contains both the private key
@@ -126,7 +127,7 @@ def rsa_decrypt(private_key: rsa.RSAPrivateKey, ciphertext: str) -> str:
 # Returns: The encrypted message (ciphertext), as a raw byte string.
 #
 def aes_encrypt(key, nonce, plaintext: bytes) -> bytes:
-    cipher = Cipher(algorithms.AES(key), modes.CTR(nonce), backend=default_backend())
+    cipher = Cipher(algorithms.AES(key), modes.CTR(nonce), default_backend())
     encryptor = cipher.encryptor()
     ciphertext = encryptor.update(plaintext) + encryptor.finalize()
     return ciphertext
@@ -145,8 +146,11 @@ def aes_encrypt(key, nonce, plaintext: bytes) -> bytes:
 #
 # Returns: The decrypted message (plaintext), as a raw byte string.
 #
-def aes_decrypt(key, nonce, ciphertext):
-    raise Exception("You need to implement this function!")
+def aes_decrypt(key, nonce, ciphertext: bytes) -> bytes:
+    cipher = Cipher(algorithms.AES(key), modes.CTR(nonce), default_backend())
+    decryptor = cipher.decryptor()
+    plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+    return plaintext
 
 #
 # Encrypts a plaintext message using AES-256-CTR using a randomly generated
@@ -161,8 +165,12 @@ def aes_decrypt(key, nonce, ciphertext):
 #       raw byte string).
 #   ciphertext: The encrypted message (as a raw byte string).
 #
-def aes_encrypt_with_random_session_key(plaintext):
-    raise Exception("You need to implement this function!")
+def aes_encrypt_with_random_session_key(plaintext: bytes) -> tuple[bytes,bytes,bytes]:
+    random_key = urandom(32)
+    random_nonce = urandom(32)
+    return aes_encrypt(key=random_key, nonce=random_nonce, plaintext=plaintext)
+
+
 
 #
 # Encrypt a message using AES-256-CTR and a random session key, which in turn
@@ -180,8 +188,10 @@ def aes_encrypt_with_random_session_key(plaintext):
 #       raw byte string).
 #   ciphertext: The AES-256-CTR-encrypted message (as a raw byte string).
 #
-def encrypt_message_with_aes_and_rsa(public_key, plaintext):
-    raise Exception("You need to implement this function!")
+def encrypt_message_with_aes_and_rsa(public_key: rsa.RSAPublicKey, plaintext: bytes) -> tuple[bytes,bytes,bytes]:
+    session_key, nounce, ciphertext = aes_encrypt_with_random_session_key(plaintext)
+    ciphertext = rsa_encrypt(public_key=public_key, plaintext=ciphertext)
+    return session_key, nounce, ciphertext
 
 #
 # Decrypt a message that has been encrypted with AES-256-CTR, using an
@@ -198,9 +208,9 @@ def encrypt_message_with_aes_and_rsa(public_key, plaintext):
 #
 # Returns: The decrypted message (plaintext), as a raw byte string.
 #
-def decrypt_message_with_aes_and_rsa(
-        private_key, encrypted_session_key, nonce, ciphertext):
-    raise Exception("You need to implement this function!")
+def decrypt_message_with_aes_and_rsa(private_key: rsa.RSAPrivateKey, encrypted_session_key: bytes, nonce: bytes, ciphertext: bytes) -> bytes:
+    ciphertext = rsa_decrypt(private_key, ciphertext)
+    return aes_decrypt(key=encrypted_session_key, nonce=nonce, ciphertext=ciphertext)
 
 #
 # Benchmark the following operations:
