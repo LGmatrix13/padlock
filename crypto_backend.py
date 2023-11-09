@@ -41,8 +41,11 @@ def rsa_serialize_private_key(private_key: rsa.RSAPrivateKey):
 #
 # Returns: An rsa.RSAPrivateKey object consisting of the deserialized key.
 #
-def rsa_deserialize_private_key(pem_privkey):
+def rsa_deserialize_private_key(pem_privkey) -> rsa.RSAPrivateKey:
+    return 
+
     raise Exception("You need to implement this function!")
+
 
 #
 # Argument: An rsa.RSAPublicKey object
@@ -50,15 +53,20 @@ def rsa_deserialize_private_key(pem_privkey):
 # Returns: An ASCII/UTF-8 serialization of the public key using the
 #   SubjectPublicKeyInfo format and PEM encoding.
 #
-def rsa_serialize_public_key(public_key):
-    raise Exception("You need to implement this function!")
+def rsa_serialize_public_key(public_key: rsa.RSAPublicKey) ->  rsa.RSAPublicKey:
+    return public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo 
+    ).decode('utf-8')
 
 #
 # Argument: A string containing an RSA public key in PEM format.
 #
 # Returns: An rsa.RSAPublicKey object consisting of the deserialized key.
 #
-def rsa_deserialize_public_key(pem_pubkey):
+def rsa_deserialize_public_key(pem_pubkey: str) -> rsa.RSAPublicKey:
+    
+    
     raise Exception("You need to implement this function!")
 
 #
