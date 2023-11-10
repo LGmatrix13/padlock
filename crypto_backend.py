@@ -167,8 +167,8 @@ def aes_decrypt(key, nonce, ciphertext: bytes) -> bytes:
 #
 def aes_encrypt_with_random_session_key(plaintext: bytes) -> tuple[bytes,bytes,bytes]:
     random_key = urandom(32)
-    random_nonce = urandom(32)
-    return aes_encrypt(key=random_key, nonce=random_nonce, plaintext=plaintext)
+    random_nonce = urandom(16)
+    return random_key, random_nonce, aes_encrypt(key=random_key, nonce=random_nonce, plaintext=plaintext)
 
 
 
