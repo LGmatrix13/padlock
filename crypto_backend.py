@@ -32,7 +32,7 @@ def rsa_gen_keypair():
 def rsa_serialize_private_key(private_key: rsa.RSAPrivateKey):
     return private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
     ).decode("utf-8")
 
@@ -44,7 +44,7 @@ def rsa_serialize_private_key(private_key: rsa.RSAPrivateKey):
 # Returns: An rsa.RSAPrivateKey object consisting of the deserialized key.
 #
 def rsa_deserialize_private_key(pem_privkey) -> rsa.RSAPrivateKey:
-    return load_pem_private_key(pem_privkey, None)
+    return load_pem_private_key(pem_privkey.encode("utf-8"), None)
 
 
 
@@ -66,7 +66,7 @@ def rsa_serialize_public_key(public_key: rsa.RSAPublicKey) -> str:
 # Returns: An rsa.RSAPublicKey object consisting of the deserialized key.
 #
 def rsa_deserialize_public_key(pem_pubkey: str) -> rsa.RSAPublicKey:
-    return load_pem_public_key(pem_pubkey)
+    return load_pem_public_key(pem_pubkey.encode("utf-8"), None)
 
 #
 # Arguments:
