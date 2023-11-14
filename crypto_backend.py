@@ -190,7 +190,7 @@ def aes_encrypt_with_random_session_key(plaintext: bytes) -> tuple[bytes,bytes,b
 #
 def encrypt_message_with_aes_and_rsa(public_key: rsa.RSAPublicKey, plaintext: bytes) -> tuple[bytes,bytes,bytes]:
     session_key, nounce, ciphertext = aes_encrypt_with_random_session_key(plaintext)
-    ciphertext = rsa_encrypt(public_key=public_key, plaintext=ciphertext)
+    session_key = rsa_encrypt(public_key=public_key, plaintext=session_key)
     return session_key, nounce, ciphertext
 
 #
@@ -209,8 +209,8 @@ def encrypt_message_with_aes_and_rsa(public_key: rsa.RSAPublicKey, plaintext: by
 # Returns: The decrypted message (plaintext), as a raw byte string.
 #
 def decrypt_message_with_aes_and_rsa(private_key: rsa.RSAPrivateKey, encrypted_session_key: bytes, nonce: bytes, ciphertext: bytes) -> bytes:
-    ciphertext = rsa_decrypt(private_key, ciphertext)
-    return aes_decrypt(key=encrypted_session_key, nonce=nonce, ciphertext=ciphertext)
+    decrypted_session_key = rsa_decrypt(private_key, encrypted_session_key)
+    return aes_decrypt(key=decrypted_session_key, nonce=nonce, ciphertext=ciphertext)
 
 #
 # Benchmark the following operations:
