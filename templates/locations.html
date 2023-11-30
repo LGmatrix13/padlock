@@ -1,0 +1,11 @@
+{% extends "base.html" %} {% block title %}Locations{% endblock %} {% block
+content %}
+<section class="space-y-5 mb-10">
+  <h1 class="font-bold text-2xl">Shared Locations</h1>
+  {% if locations %} {% for location in locations %}
+  <div class="border-2 p-10 rounded-lg">{{ location.ciphertext }}</div>
+  {% endfor %} {% else %}
+  <div class="border-2 p-5 rounded-lg">No locations yet</div>
+  {% endif %}
+</section>
+{% endblock %}

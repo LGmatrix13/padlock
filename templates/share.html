@@ -1,0 +1,33 @@
+{% extends "base.html" %} {% block title %}Share Certification{% endblock %} {%
+block content %}
+<section class="space-y-5 mb-10">
+  <h1 class="text-2xl font-bold">Share Certification</h1>
+  <p>Copy you certification and share it with others!</p>
+  <div class="space-y-3">
+    <label class="font-bold" for="public-key-link">Public Key</label>
+    <textarea
+      class="bg-gray-200 rounded-lg w-full p-3"
+      name="private-key"
+      id="private-key"
+      cols="30"
+      rows="10"
+      readonly="readonly"
+    >
+      {{ public_key }}
+    </textarea>
+  </div>
+  <div class="space-y-3">
+    <label class="font-bold" for="public-key">Private Key</label>
+    <textarea
+      class="bg-gray-200 rounded-lg w-full p-3"
+      name="public-key"
+      id="public-key"
+      cols="30"
+      rows="10"
+      readonly="readonly"
+    >
+      {{ private_key }}
+    </textarea>
+  </div>
+</section>
+{% endblock %}
