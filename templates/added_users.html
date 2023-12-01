@@ -1,9 +1,0 @@
-{% extends "base.html" %} {% block title %}Setup Certification{% endblock %}
-{%block content %}
-<section class="space-y-5 mb-10">
-  <h1 class="text-2xl font-bold">Users</h1>
-  {% for added_user in added_users %}
-  <div class="p-5 border-2 rounded-lg">{{ added_user.owner }}</div>
-  {% endfor %}
-</section>
-{% endblock %}

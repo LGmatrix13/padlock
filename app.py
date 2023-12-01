@@ -1,7 +1,8 @@
+from base64 import b64decode, b64encode
 from functools import wraps
-from flask import Flask, session, render_template, redirect, url_for, request, flash
+from flask import Flask, abort, jsonify, session, render_template, redirect, url_for, flash
 from flask_wtf import FlaskForm
-from wtforms.fields import StringField, SubmitField, TextAreaField
+from wtforms.fields import StringField, SubmitField, TextAreaField, SelectField
 from wtforms.validators import InputRequired
 from cryptography.hazmat.primitives.asymmetric import rsa
 import crypto_backend as cb
@@ -19,34 +20,36 @@ class ImportKeyForm(FlaskForm):
     key = TextAreaField("Key", validators=[InputRequired()])
     submit = SubmitField("Submit")
 
+class SendLocationForm(FlaskForm):
+    contact = SelectField("Contacts")
+    note = TextAreaField("Note", validators=[InputRequired()])
+    submit = SubmitField("Submit")
+
 class AddedUsers:
     def __init__(self) -> None:
         self.data = {}
-    def create(self, user_id: str, owner: str, public_key: str, private_key: str) -> None:
+    def create(self, user_id: str, owner: str, public_key: str) -> None:
         if self.data.get(session["user_id"]) is None:
-            self.data[session["user_id"]] = []
-
-        self.data[session["user_id"]].append({
-            "user_id": user_id,
+            self.data[session["user_id"]] = {}
+        self.data[session["user_id"]][user_id] = {
             "owner": owner,
-            "public_key": public_key,
-            "private_key": private_key
-        })
+            "public": cb.rsa_deserialize_public_key(public_key),
+        }
     def me(self) -> dict:
-        return self.data.get(session["user_id"])
+        return self.data.get(session.get("user_id"))
 
 class Locations:
     def __init__(self) -> None:
         self.data: dict[tuple[str, str], str] = {}
-    def create(self, to: int, note: str):
-        ciphertext = note
-        self.data[(session["user_id"], to)] = ciphertext
+    def create(self, to: int, message: dict):
+        self.data[(session["user_id"], to)] = message
     def me(self, added_users: AddedUsers) -> list[dict]:
-        return [
-            self.data[(added_user["user_id"], session["user_id"])]
-            for added_user in added_users.me()
-            if self.data.get((added_user["user_id"], session["user_id"])) is not None
-        ]
+        return {
+            added_user: self.data[(added_user, session["user_id"])]
+            for added_user in added_users.me().keys()
+            if self.data.get((added_user, session["user_id"])) is not None
+        }
+        
 
 class Users:
     def __init__(self) -> None:
@@ -107,15 +110,35 @@ def post_setup():
 @app.get('/')
 @setup_required
 @added_user_required
-def get_index():    
-    print(locations.me(added_users))
-    return render_template('locations.html', locations = locations.me(added_users), user = users.me())
+def get_index():   
+    contacts = [
+        {
+            "user_id": user_id,
+            "name": added_user["owner"]
+        } for user_id, added_user in added_users.me().items()
+    ] 
+    return render_template('contacts.html', contacts = contacts)
+
+@app.get('/contact/<user_id>/')
+def get_contact(user_id):
+    user = users.me()
+    contact = added_users.me().get(user_id)
+    location = locations.me(added_users).get(user_id)
+
+    location["plaintext"] = cb.decrypt_message_with_aes_and_rsa(
+        user.get("private"), 
+        b64decode(location.get('sessionkey'), validate=True),
+        b64decode(location.get('nonce'), validate=True),
+        b64decode(location.get('ciphertext'), validate=True)
+    ).decode('utf-8')
+
+    return render_template('contact.html', name = contact.get('owner'), location = location)
 
 @app.get("/add/")
 @setup_required
 def get_add():
     form = ImportKeyForm()
-    return render_template("add.html", form = form)
+    return render_template("add_contact.html", form = form)
 
 @app.post("/add/")
 @setup_required
@@ -123,14 +146,41 @@ def post_add():
     form = ImportKeyForm()
     if form.validate():
         cert = json.loads(form.key.data)
-        added_users.create(cert["userId"], cert["owner"], cert.get("publicKey"), cert.get("privateKey"))
-        return redirect(url_for("get_added_users"))
+        added_users.create(cert["userId"], cert["owner"], cert.get("publicKey"))
+        return redirect(url_for("get_index"))
 
-@app.get("/added-users/")
+@app.get("/send-location/")
 @setup_required
 @added_user_required
-def get_added_users():
-    return render_template("added_users.html", added_users = added_users.me())
+def get_send_location():
+    form = SendLocationForm()
+    form.contact.choices = [(user_id, user["owner"]) for user_id, user in added_users.me().items()]
+    return render_template("send_location.html", form = form)
+
+@app.post("/send-location/")
+@setup_required
+@added_user_required
+def post_send_location():
+    form = SendLocationForm()
+    form.contact.choices = [(user_id, user["owner"]) for user_id, user in added_users.me().items()]
+
+    if form.validate():
+        user_id = form.contact.data
+        note = form.note.data.encode('utf-8')
+        contacts = added_users.me()
+        public_key = contacts.get(user_id).get("public")
+        encrypted_session_key, nonce, ciphertext = cb.encrypt_message_with_aes_and_rsa(public_key, note)
+        message = {
+            "sessionkey": b64encode(encrypted_session_key).decode('ascii'),
+            'nonce': b64encode(nonce).decode('ascii'),
+            'ciphertext': b64encode(ciphertext).decode('ascii')
+        }
+        locations.create(user_id, message)
+        flash("Sent message successfully")
+        return redirect(url_for("get_send_location"))
+
+
+
 
 @app.get("/share/")
 @setup_required

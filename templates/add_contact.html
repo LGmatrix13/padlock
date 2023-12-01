@@ -1,15 +1,7 @@
-{% extends "base.html" %} {% block title %}Import Key{% endblock %} {%block
-content %} {% if get_flashed_messages() %}
+{% extends "base.html" %} {% block title %}Add Contact{% endblock %} {%block
+content %}
 <section class="space-y-5 mb-10">
-  {% for message in get_flashed_messages() %}
-  <div class="p-5 rounded-lg border-2">
-    <p>{{ message }}</p>
-  </div>
-  {% endfor %}
-</section>
-{% endif %}
-<section class="space-y-5 mb-10">
-  <h1 class="text-2xl font-bold">Add User to Circle</h1>
+  <h1 class="text-2xl font-bold">Add Contact</h1>
   <form method="POST" class="space-y-5">
     {{form.hidden_tag()}}
     <div class="space-y-3">

@@ -1,0 +1,13 @@
+{% extends "base.html" %} {% block title %}Locations{% endblock %} {% block
+content %}
+<section class="space-y-5 mb-10 flex flex-col">
+  <h1 class="font-bold text-2xl">Contacts</h1>
+  {% if contacts %} {% for contact in contacts %}
+  <a href="/contact/{{ contact.user_id }}">
+    <div class="border-2 p-5 rounded-lg">{{ contact.name }}</div>
+  </a>
+  {% endfor %} {% else %}
+  <div class="border-2 p-5 rounded-lg">No contacts yet</div>
+  {% endif %}
+</section>
+{% endblock %}

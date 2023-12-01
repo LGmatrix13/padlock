@@ -1,0 +1,18 @@
+{% extends "base.html" %} {% block title %}Contact{% endblock %} {% block
+content %}
+<section class="space-y-5 mb-10 flex flex-col">
+  <h1 class="font-bold text-2xl">{{ name }}</h1>
+  {% if location %}
+  <div class="space-y-5 mb-10">
+    <h2 class="text-xl font-bold">Plaintext</h2>
+    <p>{{ location.plaintext }}</p>
+  </div>
+  <div class="space-y-5 mb-10">
+    <h2 class="text-xl font-bold">Ciphertext</h2>
+    <p>{{ location.ciphertext }}</p>
+  </div>
+  {% else %}
+  <div class="border-2 p-5 rounded-lg">Location not sent yet</div>
+  {% endif %}
+</section>
+{% endblock %}
