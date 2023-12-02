@@ -1,12 +1,12 @@
 {% extends "base.html" %} {% block title %}Add Contact{% endblock %} {%block
 content %}
 <section class="space-y-5 mb-10">
-  <h1 class="text-2xl font-bold">Add Contact</h1>
-  <form method="POST" class="space-y-5">
+  <h1 class="text-2xl font-bold">Upload Contact</h1>
+  <form method="POST" enctype="multipart/form-data" class="space-y-5">
     {{form.hidden_tag()}}
     <div class="space-y-3">
-      {{form.key.label(class = "font-bold")}} {{form.key(class="bg-gray-200
-      rounded-lg w-full p-3", placeholder = "Key")}}
+      {{form.file.label(class = "font-bold")}} {{form.file(class="bg-gray-200
+      rounded-lg w-full p-3")}}
     </div>
     {{form.submit(class = "bg-blue-600 text-white w-full rounded-lg p-3")}}
   </form>

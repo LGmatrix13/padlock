@@ -1,10 +1,10 @@
 from base64 import b64decode, b64encode
 from functools import wraps
-from flask import Flask, session, render_template, redirect, url_for, flash
+from flask import Flask, session, render_template, redirect, url_for, flash, Response
 from flask_wtf import FlaskForm
-from wtforms.fields import StringField, SubmitField, TextAreaField, SelectField
+from flask_wtf.file import FileField
+from wtforms.fields import StringField, SubmitField, TextAreaField, SelectField, IntegerField
 from wtforms.validators import InputRequired
-from cryptography.hazmat.primitives.asymmetric import rsa
 import crypto_backend as cb
 import pandas as pd
 import uuid
@@ -18,11 +18,13 @@ class CertificationForm(FlaskForm):
     submit = SubmitField("Submit")
 
 class ImportKeyForm(FlaskForm):
-    key = TextAreaField("Key", validators=[InputRequired()])
+    file = FileField("Contact File")
     submit = SubmitField("Submit")
 
 class SendLocationForm(FlaskForm):
     contact = SelectField("Contacts")
+    longitude = IntegerField("Longitude")
+    latitude = IntegerField("Latitude")
     note = TextAreaField("Note", validators=[InputRequired()])
     submit = SubmitField("Submit")
 
@@ -92,8 +94,8 @@ def added_user_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if added_users.me().empty:
-            flash("This requires you to add a user to your circle first")
-            return redirect(url_for("get_add"))
+            flash("This requires you to add a contact first")
+            return redirect(url_for("get_add_contact"))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -129,14 +131,16 @@ def get_index():
 @setup_required
 def get_add_contact():
     form = ImportKeyForm()
-    return render_template("add_contact.html", form = form)
+    return render_template("upload_contact.html", form = form)
 
 @app.post("/add/")
 @setup_required
 def post_add_contact():
     form = ImportKeyForm()
     if form.validate():
-        cert = json.loads(form.key.data)
+        file = form.file.data
+        content = file.read()
+        cert = json.loads(content)
         added_users.create(cert["userId"], cert["name"], cert.get("publicKey"))
         flash("Contact added successfully")
         return redirect(url_for("get_add_contact"))
@@ -165,22 +169,42 @@ def post_send_location():
         nonce = b64encode(nonce).decode('ascii')
         ciphertext = b64encode(ciphertext).decode('ascii')
         locations.create(contact_id=contact_id, nonce=nonce, sessionkey=sessionkey, ciphertext=ciphertext)
-        flash("Sent message successfully")
+        flash("Sent location successfully")
         return redirect(url_for("get_send_location"))
-
 
 @app.get("/share/")
 @setup_required
 def get_share():
+    return render_template("share.html")
+
+@app.get("/download/public")
+@setup_required
+@added_user_required
+def get_download_public():
+    user = users.me()
+    public_key = json.dumps({
+        "userId": session["user_id"],
+        "name": user["name"],
+        "publicKey": user["public"]
+    })
+    return Response(
+        public_key,
+        mimetype="text/plain",
+        headers={'Content-disposition': 'attachment; filename=public_contact.json'}
+    )
+
+@app.get("/download/private")
+@setup_required
+@added_user_required    
+def get_download_private():
     user = users.me()
     private_key = json.dumps({
         "userId": session["user_id"],
         "name": user["name"],
         "privateKey": cb.rsa_serialize_private_key(user["private"])
     })
-    public_key = json.dumps({
-        "userId": session["user_id"],
-        "name": user["name"],
-        "publicKey": user["public"]
-    })
-    return render_template("share.html", public_key = public_key, private_key = private_key)
+    return Response(
+        private_key,
+        mimetype="text/plain",
+        headers={'Content-disposition': 'attachment; filename=private_contact.json'}
+    )
