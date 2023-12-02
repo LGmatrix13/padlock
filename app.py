@@ -1,6 +1,6 @@
 from base64 import b64decode, b64encode
 from functools import wraps
-from flask import Flask, abort, session, render_template, redirect, url_for, flash
+from flask import Flask, session, render_template, redirect, url_for, flash
 from flask_wtf import FlaskForm
 from wtforms.fields import StringField, SubmitField, TextAreaField, SelectField
 from wtforms.validators import InputRequired
@@ -50,7 +50,6 @@ class Locations:
             sessionkey,
             ciphertext
         ]
-
     def me(self, added_users: AddedUsers) -> pd.DataFrame:
         temp = self.data[self.data['user_id'] == session['user_id']].merge(added_users.me(), on="contact_id")
         return temp[['contact_id', 'name', 'ciphertext', 'nonce', 'sessionkey']]
@@ -76,8 +75,14 @@ locations = Locations()
 def setup_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if session.get("user_id") is None or users.me() is None:
+        try:
+            session["user_id"]
+            users.me()
+        except KeyError:
             session["user_id"] = str(uuid.uuid4())
+            flash("This requires you to setup your account first")
+            return redirect(url_for("get_setup"))
+        except IndexError:
             flash("This requires you to setup your account first")
             return redirect(url_for("get_setup"))
         return f(*args, **kwargs)
@@ -86,7 +91,7 @@ def setup_required(f):
 def added_user_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if added_users.me() is None:
+        if added_users.me().empty:
             flash("This requires you to add a user to your circle first")
             return redirect(url_for("get_add"))
         return f(*args, **kwargs)
@@ -110,7 +115,6 @@ def post_setup():
 def get_index():   
     user = users.me()
     messages = locations.me(added_users).to_dict(orient="records")
-    
     for message in messages:
         message["plaintext"] = cb.decrypt_message_with_aes_and_rsa(
             user.get("private"), 
@@ -118,25 +122,24 @@ def get_index():
             b64decode(message.get('nonce'), validate=True),
             b64decode(message.get('ciphertext'), validate=True)
         ).decode('utf-8')
-    
     return render_template('locations.html', locations = messages)
 
 
 @app.get("/add/")
 @setup_required
-def get_add():
+def get_add_contact():
     form = ImportKeyForm()
     return render_template("add_contact.html", form = form)
 
 @app.post("/add/")
 @setup_required
-def post_add():
+def post_add_contact():
     form = ImportKeyForm()
     if form.validate():
         cert = json.loads(form.key.data)
         added_users.create(cert["userId"], cert["name"], cert.get("publicKey"))
         flash("Contact added successfully")
-        return redirect(url_for("get_index"))
+        return redirect(url_for("get_add_contact"))
 
 @app.get("/send-location/")
 @setup_required
@@ -152,7 +155,6 @@ def get_send_location():
 def post_send_location():
     form = SendLocationForm()
     form.contact.choices = [(user['user_id'], user["name"]) for user in added_users.me().to_dict(orient="records")]
-
     if form.validate():
         contact_id = form.contact.data
         note = form.note.data.encode('utf-8')

@@ -5,7 +5,8 @@ content %}
   {% if locations %} {% for location in locations %}
   <div class="border-2 p-5 rounded-lg space-y-3">
     <h2 class="text-xl font-bold">{{ location.name }}</h2>
-    <p>{{ location.plaintext }}</p>
+    <p>Plaintext: {{ location.plaintext }}</p>
+    <p>Ciphertext: {{ location.ciphertext }}</p>
   </div>
   {% endfor %} {% else %}
   <div class="border-2 p-5 rounded-lg">No locations sent yet</div>
