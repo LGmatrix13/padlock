@@ -10,6 +10,16 @@ content %}
       "Contacts")}}
     </div>
     <div class="space-y-3">
+      {{form.longitude.label(class = "font-bold")}}
+      {{form.longitude(class="bg-gray-200 rounded-lg w-full p-3", placeholder =
+      "Longitude")}}
+    </div>
+    <div class="space-y-3">
+      {{form.latitude.label(class = "font-bold")}}
+      {{form.latitude(class="bg-gray-200 rounded-lg w-full p-3", placeholder =
+      "Latitude")}}
+    </div>
+    <div class="space-y-3">
       {{form.note.label(class = "font-bold")}} {{form.note(class="bg-gray-200
       rounded-lg w-full p-3", placeholder = "Note")}}
     </div>

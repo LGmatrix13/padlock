@@ -179,7 +179,6 @@ def get_share():
 
 @app.get("/download/public")
 @setup_required
-@added_user_required
 def get_download_public():
     user = users.me()
     public_key = json.dumps({
@@ -195,7 +194,6 @@ def get_download_public():
 
 @app.get("/download/private")
 @setup_required
-@added_user_required    
 def get_download_private():
     user = users.me()
     private_key = json.dumps({

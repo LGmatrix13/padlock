@@ -3,11 +3,17 @@ content %}
 <section class="space-y-5 mb-10 flex flex-col">
   <h1 class="font-bold text-2xl">Locations</h1>
   {% if locations %} {% for location in locations %}
-  <div class="border-2 p-5 rounded-lg space-y-3">
-    <h2 class="text-xl font-bold">{{ location.name }}</h2>
-    <p>Plaintext: {{ location.plaintext }}</p>
-    <p>Ciphertext: {{ location.ciphertext }}</p>
-  </div>
+  <a
+    href="http://maps.google.com/maps?q=24.197611,120.780512"
+    target="_blank"
+    rel="noreferrer noopener"
+  >
+    <div class="border-2 p-5 rounded-lg space-y-3">
+      <h2 class="text-xl font-bold">{{ location.name }}</h2>
+      <p>Plaintext: {{ location.plaintext }}</p>
+      <p>Ciphertext: {{ location.ciphertext }}</p>
+    </div>
+  </a>
   {% endfor %} {% else %}
   <div class="border-2 p-5 rounded-lg">No locations sent yet</div>
   {% endif %}
