@@ -4,14 +4,13 @@ content %}
   <h1 class="font-bold text-2xl">Locations</h1>
   {% if locations %} {% for location in locations %}
   <a
-    href="http://maps.google.com/maps?q=24.197611,120.780512"
+    href="http://maps.google.com/maps?q={{ location.data.latitude }},{{ location.data.longitude }}"
     target="_blank"
     rel="noreferrer noopener"
   >
     <div class="border-2 p-5 rounded-lg space-y-3">
       <h2 class="text-xl font-bold">{{ location.name }}</h2>
-      <p>Plaintext: {{ location.plaintext }}</p>
-      <p>Ciphertext: {{ location.ciphertext }}</p>
+      <p>{{ location.data.note }}</p>
     </div>
   </a>
   {% endfor %} {% else %}
