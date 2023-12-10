@@ -43,18 +43,19 @@ class AddedUsers:
 
 class Locations:
     def __init__(self) -> None:
-        self.data: pd.DataFrame = pd.DataFrame(columns=['user_id', 'contact_id', 'nonce', 'sessionkey', 'ciphertext'])
-    def create(self, contact_id: str, nonce: str, sessionkey: str, ciphertext: str):
+        self.data: pd.DataFrame = pd.DataFrame(columns=['user_id', 'contact_id', 'name', 'nonce', 'sessionkey', 'ciphertext'])
+    def create(self, contact_id: str, name: str, nonce: str, sessionkey: str, ciphertext: str):
         self.data.loc[len(self.data)] = [
             session['user_id'],
             contact_id,
+            name,
             nonce,
             sessionkey,
             ciphertext
         ]
     def me(self, added_users: AddedUsers) -> pd.DataFrame:
-        temp = self.data[self.data['contact_id'] == session['user_id']].merge(added_users.me(), on="contact_id")
-        return temp[['contact_id', 'name', 'ciphertext', 'nonce', 'sessionkey']]
+        temp = self.data[self.data['contact_id'] == session['user_id']]
+        return temp[['name', 'ciphertext', 'nonce', 'sessionkey']]
         
 
 class Users:
@@ -161,7 +162,6 @@ def get_send_location():
 def post_send_location():
     form = SendLocationForm()
     form.contact.choices = [(user['contact_id'], user["name"]) for user in added_users.me().to_dict(orient="records")]
-    print(form.contact.choices)
     if form.validate():
         contact_id = form.contact.data
         data = {
@@ -169,15 +169,17 @@ def post_send_location():
             "latitude": form.latitude.data,
             "longitude": form.longitude.data
         }
+        contacts = added_users.me()
         user = users.me()
+        contact = contacts[contacts["contact_id"] == contact_id].iloc[0].to_dict()
         encrypted_session_key, nonce, ciphertext = cb.encrypt_message_with_aes_and_rsa(
-            cb.rsa_deserialize_public_key(user["public"]),
+            contact["public"],
             json.dumps(data).encode('utf-8')
         )
         sessionkey = b64encode(encrypted_session_key).decode('ascii')
         nonce = b64encode(nonce).decode('ascii')
         ciphertext = b64encode(ciphertext).decode('ascii')
-        locations.create(contact_id=contact_id, nonce=nonce, sessionkey=sessionkey, ciphertext=ciphertext)
+        locations.create(contact_id=contact_id, name=user["name"], nonce=nonce, sessionkey=sessionkey, ciphertext=ciphertext)
         flash("Sent location successfully")
         return redirect(url_for("get_send_location"))
 
