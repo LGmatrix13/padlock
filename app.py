@@ -13,7 +13,7 @@ import json
 app = Flask(__name__)
 app.config['SECRET_KEY'] = str(uuid.uuid4())
 
-class CertificationForm(FlaskForm):
+class SetupForm(FlaskForm):
     name = StringField("Name")
     submit = SubmitField("Submit")
 
@@ -53,7 +53,7 @@ class Locations:
             sessionkey,
             ciphertext
         ]
-    def me(self, added_users: AddedUsers) -> pd.DataFrame:
+    def me(self) -> pd.DataFrame:
         temp = self.data[self.data['contact_id'] == session['user_id']]
         return temp[['name', 'ciphertext', 'nonce', 'sessionkey']]
         
@@ -102,12 +102,12 @@ def added_user_required(f):
 
 @app.get('/setup/')
 def get_setup():
-    form = CertificationForm()
+    form = SetupForm()
     return render_template('setup.html', form = form)
 
 @app.post("/setup/")
 def post_setup():
-    form = CertificationForm()
+    form = SetupForm()
     users.create(name=form.name.data, key=cb.rsa_gen_keypair())
     flash("Successfully created your key pair")
     return redirect(url_for("get_share"))
@@ -117,7 +117,7 @@ def post_setup():
 @added_user_required
 def get_index():   
     user = users.me()
-    messages = locations.me(added_users).to_dict(orient="records")
+    messages = locations.me().to_dict(orient="records")
     for message in messages:
         message["data"] = json.loads(
             cb.decrypt_message_with_aes_and_rsa(
@@ -192,6 +192,7 @@ def get_share():
 @setup_required
 def get_download_public():
     user = users.me()
+    user_name = user["name"].replace(' ', '-')
     public_key = json.dumps({
         "userId": session["user_id"],
         "name": user["name"],
@@ -200,13 +201,14 @@ def get_download_public():
     return Response(
         public_key,
         mimetype="text/plain",
-        headers={'Content-disposition': 'attachment; filename=public_contact.json'}
+        headers={"Content-disposition": f"attachment; filename=public_contact_{user_name}.json"}
     )
 
 @app.get("/download/private")
 @setup_required
 def get_download_private():
     user = users.me()
+    user_name = user["name"].replace(' ', '-')
     private_key = json.dumps({
         "userId": session["user_id"],
         "name": user["name"],
@@ -215,5 +217,5 @@ def get_download_private():
     return Response(
         private_key,
         mimetype="text/plain",
-        headers={'Content-disposition': 'attachment; filename=private_contact.json'}
+        headers={"Content-disposition": f"attachment; filename=private_contact_{user_name}.json"}
     )
