@@ -331,3 +331,11 @@ def benchmark():
                 result1 = rsa_keygen_avg, result2 = aes_keygen_avg,
                 result3 = rsa_encrypt_avg, result4 = aes_encrypt_avg,
                 elapsed = elapsed_end - elapsed_begin)
+
+def RSA_Signature(private_key,message):
+    signature = private_key.sign(message,padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS._MaxLength),hashes.SHA256())
+    return signature
+
+def RSA_Verify(public_key, signature, message):
+    verify = public_key.verify(signature, message, padding.PSS(mgf=padding.MGF1(hashes.SHA256()),salt_length=padding.PSS._MaxLength),hashes.SHA256())
+    return verify
