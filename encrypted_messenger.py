@@ -153,6 +153,8 @@ while True:
         (encrypted_session_key, nonce, ciphertext) = \
                 crypto_backend.encrypt_message_with_aes_and_rsa(
                         public_key, plaintext)
+        
+        signature = crypto_backend.RSA_Signature(private_key, f"{encrypted_session_key}{nonce}{ciphertext}")
 
         # Package the encrypted session key, nonce, and ciphertext as a JSON
         # object suitable for transmission to the recipient.
@@ -167,7 +169,8 @@ while True:
         packaged_msg = {
                 'sessionkey': b64encode(encrypted_session_key).decode('ascii'),
                 'nonce': b64encode(nonce).decode('ascii'),
-                'ciphertext': b64encode(ciphertext).decode('ascii')
+                'ciphertext': b64encode(ciphertext).decode('ascii'),
+                'signature': b64encode(signature).decode('ascii')
                 }
         jsonified = json.JSONEncoder().encode(packaged_msg)
 
@@ -215,6 +218,12 @@ while True:
                     packaged_msg['sessionkey'], validate = True)
             nonce = b64decode(packaged_msg['nonce'], validate = True)
             ciphertext = b64decode(packaged_msg['ciphertext'], validate = True)
+            signature = b64decode(packaged_msg['signature'], validate= True)
+
+            verify = crypto_backend.RSA_Verify(public_key, signature, f"{encrypted_session_key}{nonce}{ciphertext}")
+            
+            # TODO: check that verification is valid
+
         except binascii.Error:
             # This will only trigger if characters other than A-Z, a-z, 0-9,
             # +, or / (or = for length padding at the end) are found in the
