@@ -43,19 +43,22 @@ class AddedUsers:
 
 class Locations:
     def __init__(self) -> None:
-        self.data: pd.DataFrame = pd.DataFrame(columns=['user_id', 'contact_id', 'name', 'nonce', 'sessionkey', 'ciphertext'])
-    def create(self, contact_id: str, name: str, nonce: str, sessionkey: str, ciphertext: str):
+        self.data: pd.DataFrame = pd.DataFrame(columns=['user_id', 'contact_id', 'name', 'nonce', 'sessionkey', 'ciphertext', 'signature'])
+    def create(self, contact_id: str, name: str, nonce: str, sessionkey: str, ciphertext: str, signature: bytes):
         self.data.loc[len(self.data)] = [
             session['user_id'],
             contact_id,
             name,
             nonce,
             sessionkey,
-            ciphertext
+            ciphertext,
+            signature
         ]
-    def me(self) -> pd.DataFrame:
-        temp = self.data[self.data['contact_id'] == session['user_id']]
-        return temp[['name', 'ciphertext', 'nonce', 'sessionkey']]
+    def me(self, added_users: AddedUsers) -> pd.DataFrame:
+        temp = self.data[['contact_id', 'nonce', 'sessionkey', 'ciphertext', 'signature']]
+        temp = temp[self.data['contact_id'] == session['user_id']].merge(added_users.me(), left_on="contact_id", right_on="user_id")
+        print(temp)
+        return temp
         
 
 class Users:
@@ -117,14 +120,22 @@ def post_setup():
 @added_user_required
 def get_index():   
     user = users.me()
-    messages = locations.me().to_dict(orient="records")
+    messages = locations.me(added_users).to_dict(orient="records")
     for message in messages:
+        sessionkey = b64decode(message.get('sessionkey'), validate=True)
+        nonce = b64decode(message.get('nonce'), validate=True)
+        ciphertext = b64decode(message.get('ciphertext'), validate=True)
+        message["verified"] = cb.RSA_Verify(
+            public_key=message.get("public"), 
+            signature=b64decode(message.get("signature"), validate=True), 
+            message= sessionkey + nonce + ciphertext
+        )
         message["data"] = json.loads(
             cb.decrypt_message_with_aes_and_rsa(
                 user.get("private"), 
-                b64decode(message.get('sessionkey'), validate=True),
-                b64decode(message.get('nonce'), validate=True),
-                b64decode(message.get('ciphertext'), validate=True)
+                sessionkey,
+                nonce,
+                ciphertext
             ).decode('utf-8')
         )
     return render_template('locations.html', locations = messages)
@@ -176,10 +187,22 @@ def post_send_location():
             contact["public"],
             json.dumps(data).encode('utf-8')
         )
+        signature = b64encode(cb.RSA_Signature(
+            private_key = user.get("private"), 
+            message = encrypted_session_key + nonce + ciphertext
+        )).decode('ascii')
         sessionkey = b64encode(encrypted_session_key).decode('ascii')
         nonce = b64encode(nonce).decode('ascii')
         ciphertext = b64encode(ciphertext).decode('ascii')
-        locations.create(contact_id=contact_id, name=user["name"], nonce=nonce, sessionkey=sessionkey, ciphertext=ciphertext)
+        locations.create(
+            contact_id=contact_id, 
+            name=user["name"], 
+            nonce=nonce, 
+            sessionkey=sessionkey, 
+            ciphertext=ciphertext, 
+            signature=signature    
+        )
+        print(signature)
         flash("Sent location successfully")
         return redirect(url_for("get_send_location"))
 
@@ -192,7 +215,7 @@ def get_share():
 @setup_required
 def get_download_public():
     user = users.me()
-    user_name = user["name"].replace(' ', '-')
+    user_name = user["name"].lower().replace(' ', '_')
     public_key = json.dumps({
         "userId": session["user_id"],
         "name": user["name"],
@@ -201,21 +224,5 @@ def get_download_public():
     return Response(
         public_key,
         mimetype="text/plain",
-        headers={"Content-disposition": f"attachment; filename=public_contact_{user_name}.json"}
-    )
-
-@app.get("/download/private")
-@setup_required
-def get_download_private():
-    user = users.me()
-    user_name = user["name"].replace(' ', '-')
-    private_key = json.dumps({
-        "userId": session["user_id"],
-        "name": user["name"],
-        "privateKey": cb.rsa_serialize_private_key(user["private"])
-    })
-    return Response(
-        private_key,
-        mimetype="text/plain",
-        headers={"Content-disposition": f"attachment; filename=private_contact_{user_name}.json"}
+        headers={"Content-disposition": f"attachment; filename=contact_{user_name}.json"}
     )
