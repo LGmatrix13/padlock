@@ -1,6 +1,6 @@
 from base64 import b64decode, b64encode
 from functools import wraps
-from flask import Flask, session, render_template, redirect, url_for, flash, Response
+from flask import Flask, session, render_template, redirect, url_for, flash, Response, jsonify
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 from wtforms.fields import StringField, SubmitField, TextAreaField, SelectField, FloatField
@@ -44,7 +44,7 @@ class AddedUsers:
 class Locations:
     def __init__(self) -> None:
         self.data: pd.DataFrame = pd.DataFrame(columns=['user_id', 'contact_id', 'name', 'nonce', 'sessionkey', 'ciphertext', 'signature'])
-    def create(self, contact_id: str, name: str, nonce: str, sessionkey: str, ciphertext: str, signature: bytes):
+    def create(self, contact_id: str, name: str, nonce: str, sessionkey: str, ciphertext: str, signature: str):
         self.data.loc[len(self.data)] = [
             session['user_id'],
             contact_id,
@@ -57,7 +57,6 @@ class Locations:
     def me(self, added_users: AddedUsers) -> pd.DataFrame:
         temp = self.data[['contact_id', 'nonce', 'sessionkey', 'ciphertext', 'signature']]
         temp = temp[self.data['contact_id'] == session['user_id']].merge(added_users.me(), left_on="contact_id", right_on="user_id")
-        print(temp)
         return temp
         
 
@@ -184,7 +183,7 @@ def post_send_location():
         user = users.me()
         contact = contacts[contacts["contact_id"] == contact_id].iloc[0].to_dict()
         encrypted_session_key, nonce, ciphertext = cb.encrypt_message_with_aes_and_rsa(
-            contact["public"],
+            contact.get("public"),
             json.dumps(data).encode('utf-8')
         )
         signature = b64encode(cb.RSA_Signature(
@@ -206,12 +205,42 @@ def post_send_location():
         flash("Sent location successfully")
         return redirect(url_for("get_send_location"))
 
+@app.get('/api/create-bad-message')
+@setup_required
+@added_user_required
+def get_api_create_bad_message():
+    data = {
+        "note": "This is a bad message 🙂",
+        "latitude": 40.7704396,
+        "longitude": -111.8919675
+    }
+    contact = added_users.me().iloc[0].to_dict()
+    user = users.me()
+    encrypted_session_key, nonce, ciphertext = cb.encrypt_message_with_aes_and_rsa(
+        contact.get("public"),
+        json.dumps(data).encode('utf-8')
+    )
+    signature =  b64encode("BAD SIGNATURE".encode('utf-8')).decode('ascii')
+    sessionkey = b64encode(encrypted_session_key).decode('ascii')
+    nonce = b64encode(nonce).decode('ascii')
+    ciphertext = b64encode(ciphertext).decode('ascii')
+    locations.create(
+        contact_id=contact["contact_id"], 
+        name=user["name"], 
+        nonce=nonce, 
+        sessionkey=sessionkey, 
+        ciphertext=ciphertext, 
+        signature=signature    
+    )
+    return f"Sent unverified message to {contact.get('name')}", 200
+
+
 @app.get("/share/")
 @setup_required
 def get_share():
     return render_template("share.html")
 
-@app.get("/download/public")
+@app.get("/download/")
 @setup_required
 def get_download_public():
     user = users.me()
