@@ -58,7 +58,6 @@ class Locations:
         temp = temp[self.data['contact_id'] == session['user_id']].merge(added_users.me(), left_on="contact_id", right_on="user_id")
         return temp
         
-
 class Users:
     def __init__(self) -> None:
         self.data: pd.DataFrame = pd.DataFrame(columns=['user_id', 'name', 'public', 'private'])
@@ -93,6 +92,13 @@ def added_user_required(f):
             return redirect(url_for("get_add_contact"))
         return f(*args, **kwargs)
     return decorated_function
+
+@app.get('/api/locations')
+@setup_required
+@added_user_required
+def get_api_locations():
+    return jsonify(locations.me(added_users=added_users).to_dict(orient="records"))
+
 
 @app.get('/setup/')
 def get_setup():
@@ -199,35 +205,6 @@ def post_send_location():
         print(signature)
         flash("Sent location successfully")
         return redirect(url_for("get_send_location"))
-
-@app.get('/api/create-bad-message')
-@setup_required
-@added_user_required
-def get_api_create_bad_message():
-    data = {
-        "note": "This is a bad message 🙂",
-        "latitude": 40.7704396,
-        "longitude": -111.8919675
-    }
-    contact = added_users.me().iloc[0].to_dict()
-    user = users.me()
-    encrypted_session_key, nonce, ciphertext = cb.encrypt_message_with_aes_and_rsa(
-        contact.get("public"),
-        json.dumps(data).encode('utf-8')
-    )
-    signature =  b64encode("BAD SIGNATURE".encode('utf-8')).decode('ascii')
-    sessionkey = b64encode(encrypted_session_key).decode('ascii')
-    nonce = b64encode(nonce).decode('ascii')
-    ciphertext = b64encode(ciphertext).decode('ascii')
-    locations.create(
-        contact_id=contact["contact_id"], 
-        nonce=nonce, 
-        sessionkey=sessionkey, 
-        ciphertext=ciphertext, 
-        signature=signature    
-    )
-    return f"Sent unverified message to {contact.get('name')}", 200
-
 
 @app.get("/share/")
 @setup_required
