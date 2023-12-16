@@ -24,9 +24,13 @@ Download each contact. After downloading each contact, upload them to the other 
 Go to "Send Location." Select the appropiate contact in the dropdown. Also accept location
 permissions to automatically populate the lat/long fields. Add a note and hit submit.
 
-## View Messages
+## View Decrypted Messages
 
 Go to "Locations." You should see a verified message badge, the user's name, and the note. Clicking on the card should open the lat/long coordinates in Google Maps.
+
+# View Encrypted Messages
+
+Go to `/api/locations` to view your sent messages/locations in ciphertext.
 
 ## Clearing Data
 

@@ -202,7 +202,6 @@ def post_send_location():
             ciphertext=ciphertext, 
             signature=signature    
         )
-        print(signature)
         flash("Sent location successfully")
         return redirect(url_for("get_send_location"))
 
