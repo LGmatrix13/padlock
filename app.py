@@ -43,12 +43,11 @@ class AddedUsers:
 
 class Locations:
     def __init__(self) -> None:
-        self.data: pd.DataFrame = pd.DataFrame(columns=['user_id', 'contact_id', 'name', 'nonce', 'sessionkey', 'ciphertext', 'signature'])
-    def create(self, contact_id: str, name: str, nonce: str, sessionkey: str, ciphertext: str, signature: str):
+        self.data: pd.DataFrame = pd.DataFrame(columns=['user_id', 'contact_id', 'nonce', 'sessionkey', 'ciphertext', 'signature'])
+    def create(self, contact_id: str, nonce: str, sessionkey: str, ciphertext: str, signature: str):
         self.data.loc[len(self.data)] = [
             session['user_id'],
             contact_id,
-            name,
             nonce,
             sessionkey,
             ciphertext,
@@ -80,14 +79,7 @@ locations = Locations()
 def setup_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        try:
-            session["user_id"]
-            users.me()
-        except KeyError:
-            session["user_id"] = str(uuid.uuid4())
-            flash("This requires you to setup your account first")
-            return redirect(url_for("get_setup"))
-        except IndexError:
+        if session.get('user_id') is None:
             flash("This requires you to setup your account first")
             return redirect(url_for("get_setup"))
         return f(*args, **kwargs)
@@ -104,6 +96,10 @@ def added_user_required(f):
 
 @app.get('/setup/')
 def get_setup():
+    if session.get('user_id') is not None:
+        return redirect(url_for("get_index"))
+
+    session["user_id"] = str(uuid.uuid4())
     form = SetupForm()
     return render_template('setup.html', form = form)
 
@@ -195,7 +191,6 @@ def post_send_location():
         ciphertext = b64encode(ciphertext).decode('ascii')
         locations.create(
             contact_id=contact_id, 
-            name=user["name"], 
             nonce=nonce, 
             sessionkey=sessionkey, 
             ciphertext=ciphertext, 
@@ -226,7 +221,6 @@ def get_api_create_bad_message():
     ciphertext = b64encode(ciphertext).decode('ascii')
     locations.create(
         contact_id=contact["contact_id"], 
-        name=user["name"], 
         nonce=nonce, 
         sessionkey=sessionkey, 
         ciphertext=ciphertext, 
