@@ -1,227 +1,189 @@
 from base64 import b64decode, b64encode
 from functools import wraps
-from flask import Flask, session, render_template, redirect, url_for, flash, Response, jsonify
-from flask_wtf import FlaskForm
-from flask_wtf.file import FileField
-from wtforms.fields import StringField, SubmitField, TextAreaField, SelectField, FloatField
-from wtforms.validators import InputRequired
-import crypto_backend as cb
-import pandas as pd
+from flask import Flask, Response, session, render_template, redirect, url_for, flash, jsonify
 import uuid
-import json
+
+import utilities.crypto_backend as cb
+from utilities.forms import DangerZoneForm, LoginForm, RegisterForm, SendForm
+from utilities.tables import Texts, Users
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = str(uuid.uuid4())
 
-class SetupForm(FlaskForm):
-    name = StringField("Name")
-    submit = SubmitField("Submit")
-
-class ImportKeyForm(FlaskForm):
-    file = FileField("Contact File")
-    submit = SubmitField("Submit")
-
-class SendLocationForm(FlaskForm):
-    contact = SelectField("Contacts")
-    longitude = FloatField("Longitude")
-    latitude = FloatField("Latitude")
-    note = TextAreaField("Note", validators=[InputRequired()])
-    submit = SubmitField("Submit")
-
-class AddedUsers:
-    def __init__(self) -> None:
-        self.data: pd.DataFrame = pd.DataFrame(columns = ["contact_id", "user_id", "name", "public"])
-    def create(self, contact_id: str, owner: str, public: str) -> None:
-        self.data.loc[len(self.data)] = [
-            contact_id,
-            session["user_id"],
-            owner,
-            cb.rsa_deserialize_public_key(public),
-        ]
-    def me(self) -> pd.DataFrame:
-        return self.data[self.data['user_id'] == session['user_id']]
-
-class Locations:
-    def __init__(self) -> None:
-        self.data: pd.DataFrame = pd.DataFrame(columns=['user_id', 'contact_id', 'nonce', 'sessionkey', 'ciphertext', 'signature'])
-    def create(self, contact_id: str, nonce: str, sessionkey: str, ciphertext: str, signature: str):
-        self.data.loc[len(self.data)] = [
-            session['user_id'],
-            contact_id,
-            nonce,
-            sessionkey,
-            ciphertext,
-            signature
-        ]
-    def me(self, added_users: AddedUsers) -> pd.DataFrame:
-        temp = self.data[['contact_id', 'nonce', 'sessionkey', 'ciphertext', 'signature']]
-        temp = temp[self.data['contact_id'] == session['user_id']].merge(added_users.me(), left_on="contact_id", right_on="user_id")
-        return temp
-        
-class Users:
-    def __init__(self) -> None:
-        self.data: pd.DataFrame = pd.DataFrame(columns=['user_id', 'name', 'public', 'private'])
-    def create(self, name: str, key):
-        self.data.loc[len(self.data)] = [
-            session['user_id'],
-            name,
-            cb.rsa_serialize_public_key(key.public_key()),
-            key
-        ]
-    def me(self) -> pd.DataFrame:
-        return self.data[self.data['user_id'] == session['user_id']].iloc[0].to_dict()
-
 users = Users()
-added_users = AddedUsers()
-locations = Locations()
+texts = Texts()
 
-def setup_required(f):
+def reject_unauthenticated(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if session.get('user_id') is None:
-            flash("This requires you to setup your account first")
-            return redirect(url_for("get_setup"))
+            flash("This requires you to authenticate first")
+            return redirect(url_for("get_auth"))
         return f(*args, **kwargs)
     return decorated_function
 
-def added_user_required(f):
+def reject_authenticated(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if added_users.me().empty:
-            flash("This requires you to add a contact first")
-            return redirect(url_for("get_add_contact"))
+        if session.get('user_id') is not None:
+            flash("You are already authenticated")
+            return redirect(url_for("get_index"))
         return f(*args, **kwargs)
     return decorated_function
 
-@app.get('/api/locations')
-@setup_required
-@added_user_required
-def get_api_locations():
-    return jsonify(locations.me(added_users=added_users).to_dict(orient="records"))
+def save_user_session(user_id: int, name: str, private_key: str):
+    session["user_id"] = user_id
+    session["name"] = name
+    session["private_key"] = private_key
 
 
-@app.get('/setup/')
-def get_setup():
-    if session.get('user_id') is not None:
+@app.get('/api/texts/')
+@reject_unauthenticated
+def get_api_texts():
+    user_id = session.get("user_id")
+    data = texts.read(user_id=user_id)
+    return jsonify(data)
+
+@app.get('/auth/')
+@reject_authenticated
+def get_auth():
+    login_form = LoginForm()
+    register_form = RegisterForm()
+    return render_template('auth.html', register_form = register_form, login_form = login_form)
+
+@app.post("/auth/register/")
+def post_auth_register():
+    form = RegisterForm()
+    private_key = cb.rsa_gen_keypair()
+    public_key = private_key.public_key()
+    user_id, name, _ = users.create(name=form.name.data, key=cb.rsa_serialize_public_key(public_key=public_key))
+    save_user_session(user_id=user_id, name=name, private_key=cb.rsa_serialize_private_key(private_key=private_key))
+    flash("Successfully created your account! Be sure to save your token for future use.")
+    return redirect(url_for("get_send"))
+
+@app.post("/auth/login/")
+def post_auth_login():
+    try:
+        login_form = LoginForm()
+        token = login_form.file.data.read().decode('utf-8')
+        private_key = cb.rsa_deserialize_private_key(token)
+        public_key = private_key.public_key()
+        user_id, name, public_key = users.read_from_public_key(public_key=cb.rsa_serialize_public_key(public_key=public_key))
+        save_user_session(user_id=user_id, name=name, private_key=token)    
+        flash(f"Welcome back, {name}!")
         return redirect(url_for("get_index"))
-
-    session["user_id"] = str(uuid.uuid4())
-    form = SetupForm()
-    return render_template('setup.html', form = form)
-
-@app.post("/setup/")
-def post_setup():
-    form = SetupForm()
-    users.create(name=form.name.data, key=cb.rsa_gen_keypair())
-    flash("Successfully created your key pair")
-    return redirect(url_for("get_share"))
+    except Exception:
+        flash("Invalid token.")
+        return redirect(url_for("get_auth"))
 
 @app.get('/')
-@setup_required
-@added_user_required
+@reject_unauthenticated
 def get_index():   
-    user = users.me()
-    messages = locations.me(added_users).to_dict(orient="records")
-    for message in messages:
-        sessionkey = b64decode(message.get('sessionkey'), validate=True)
-        nonce = b64decode(message.get('nonce'), validate=True)
-        ciphertext = b64decode(message.get('ciphertext'), validate=True)
-        message["verified"] = cb.RSA_Verify(
-            public_key=message.get("public"), 
-            signature=b64decode(message.get("signature"), validate=True), 
-            message= sessionkey + nonce + ciphertext
-        )
-        message["data"] = json.loads(
-            cb.decrypt_message_with_aes_and_rsa(
-                user.get("private"), 
-                sessionkey,
-                nonce,
-                ciphertext
+    encrypted_texts = texts.read(user_id=session.get("user_id"))
+    decrypted_texts = []
+    for encrypted_text in encrypted_texts:
+        _, _, sender_user_id, _, context, nonce, sessionkey, ciphertext, signature = encrypted_text
+        sessionkey_bytes = b64decode(sessionkey, validate=True)
+        nonce_bytes = b64decode(nonce, validate=True)
+        ciphertext_bytes = b64decode(ciphertext, validate=True)
+        signature_bytes = b64decode(signature, validate=True)
+        sender_user_id, sender_name, sender_public_key = users.read(sender_user_id)
+        recipient_private_key = cb.rsa_deserialize_private_key(session.get("private_key"))
+        decrypted_texts.append({
+            "sender": sender_name,
+            "context": context,
+            "verified": cb.RSA_Verify(
+                public_key=cb.rsa_deserialize_public_key(sender_public_key), 
+                signature=signature_bytes, 
+                message= sessionkey_bytes + nonce_bytes + ciphertext_bytes
+            ),
+            "text": cb.decrypt_message_with_aes_and_rsa(
+                recipient_private_key,
+                sessionkey_bytes,
+                nonce_bytes,
+                ciphertext_bytes        
             ).decode('utf-8')
-        )
-    return render_template('locations.html', locations = messages)
+        })
 
+    return render_template('texts.html', name = session.get("name"), texts = decrypted_texts)
 
-@app.get("/add/")
-@setup_required
-def get_add_contact():
-    form = ImportKeyForm()
-    return render_template("upload_contact.html", form = form)
+@app.get("/send/")
+@reject_unauthenticated
+def get_send():
+    form = SendForm()
+    form.recipient.choices = [(id, name) for (id, name) in users.read_all()]
+    return render_template("send.html", form = form)
 
-@app.post("/add/")
-@setup_required
-def post_add_contact():
-    form = ImportKeyForm()
+@app.post("/send/")
+@reject_unauthenticated
+def post_send():
+    form = SendForm()
+    form.recipient.choices = [(id, name) for (id, name) in users.read_all()]
+
     if form.validate():
-        file = form.file.data
-        content = file.read()
-        cert = json.loads(content)
-        added_users.create(cert["userId"], cert["name"], cert.get("publicKey"))
-        flash("Contact added successfully")
-        return redirect(url_for("get_add_contact"))
-
-@app.get("/send-location/")
-@setup_required
-@added_user_required
-def get_send_location():
-    form = SendLocationForm()
-    form.contact.choices = [(user["contact_id"], user["name"]) for user in added_users.me().to_dict(orient="records")]
-    return render_template("send_location.html", form = form)
-
-@app.post("/send-location/")
-@setup_required
-@added_user_required
-def post_send_location():
-    form = SendLocationForm()
-    form.contact.choices = [(user['contact_id'], user["name"]) for user in added_users.me().to_dict(orient="records")]
-    if form.validate():
-        contact_id = form.contact.data
-        data = {
-            "note": form.note.data,
-            "latitude": form.latitude.data,
-            "longitude": form.longitude.data
-        }
-        contacts = added_users.me()
-        user = users.me()
-        contact = contacts[contacts["contact_id"] == contact_id].iloc[0].to_dict()
+        recipient_user_id, sender_name, sender_public_key = users.read(user_id=form.recipient.data)
         encrypted_session_key, nonce, ciphertext = cb.encrypt_message_with_aes_and_rsa(
-            contact.get("public"),
-            json.dumps(data).encode('utf-8')
+            cb.rsa_deserialize_public_key(sender_public_key),
+            form.message.data.encode('utf-8')
         )
         signature = b64encode(cb.RSA_Signature(
-            private_key = user.get("private"), 
+            private_key = cb.rsa_deserialize_private_key(session.get("private_key")),
             message = encrypted_session_key + nonce + ciphertext
         )).decode('ascii')
         sessionkey = b64encode(encrypted_session_key).decode('ascii')
         nonce = b64encode(nonce).decode('ascii')
         ciphertext = b64encode(ciphertext).decode('ascii')
-        locations.create(
-            contact_id=contact_id, 
-            nonce=nonce, 
-            sessionkey=sessionkey, 
-            ciphertext=ciphertext, 
-            signature=signature    
+        texts.create(
+            sender_user_id=session.get("user_id"),
+            recipient_user_id=recipient_user_id,
+            sender=sender_name,
+            context=form.context.data,
+            nonce=nonce,
+            session_key=sessionkey,
+            ciphertext=ciphertext,
+            signature=signature 
         )
-        flash("Sent location successfully")
-        return redirect(url_for("get_send_location"))
+        
+        flash(f"Sent message successfully to {sender_name}!")
+        return redirect(url_for("get_send"))
+    
+    flash("Invalid submission.")
+    return redirect(url_for("get_send"))
 
-@app.get("/share/")
-@setup_required
-def get_share():
-    return render_template("share.html")
+@app.get("/danger-zone/")
+@reject_unauthenticated
+def get_danger_zone():
+    form = DangerZoneForm()
+    form.delete_user.choices = [(id, name) for (id, name) in users.read_all()]
+    return render_template("danger_zone.html", form = form)
 
-@app.get("/download/")
-@setup_required
-def get_download_public():
-    user = users.me()
-    user_name = user["name"].lower().replace(' ', '_')
-    public_key = json.dumps({
-        "userId": session["user_id"],
-        "name": user["name"],
-        "publicKey": user["public"]
-    })
+@app.post("/danger-zone/")
+@reject_unauthenticated
+def post_danger_zone():
+    form = DangerZoneForm()
+    form.delete_user.choices = [(id, name) for (id, name) in users.read_all()]
+
+    if form.validate() and form.master_password.data == app.config["MASTER_PASSWORD"]:        
+        delete_user_id = form.delete_user.data
+        _, deleted_user_name, _ = users.delete(user_id=delete_user_id)
+
+        flash(f"Successfully deleted {deleted_user_name}.")
+        return redirect(url_for("get_danger_zone"))
+    
+    flash("Invalid submission or the master password was incorrect.")
+    return redirect(url_for("get_danger_zone"))
+
+@app.get("/save-token/")
+@reject_unauthenticated
+def get_save_token():
+    private_key = session.get("private_key")   
+    name = session.get("name") 
     return Response(
-        public_key,
+        private_key,
         mimetype="text/plain",
-        headers={"Content-disposition": f"attachment; filename=contact_{user_name}.json"}
+        headers={"Content-disposition": f"attachment; filename={name}_token.pem"}
     )
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
