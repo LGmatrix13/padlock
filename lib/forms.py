@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import FileField
 from wtforms.fields import StringField, SubmitField, TextAreaField, SelectField
-from wtforms.validators import InputRequired, EqualTo
+from wtforms.validators import InputRequired
 
 class RegisterForm(FlaskForm):
     name = StringField("Name")

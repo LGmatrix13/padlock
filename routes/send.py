@@ -28,24 +28,20 @@ def post_send():
             cb.rsa_deserialize_public_key(sender_public_key),
             form.message.data.encode('utf-8')
         )
-        signature = b64encode(cb.RSA_Signature(
+        signature = cb.RSA_Signature(
             private_key = cb.rsa_deserialize_private_key(private_key),
             message = encrypted_session_key + nonce + ciphertext
-        )).decode('ascii')
-        sessionkey = b64encode(encrypted_session_key).decode('ascii')
-        nonce = b64encode(nonce).decode('ascii')
-        ciphertext = b64encode(ciphertext).decode('ascii')
+        )
         texts.create(
             sender_user_id=user_id,
             recipient_user_id=recipient_user_id,
             sender=sender_name,
             context=form.context.data,
             nonce=nonce,
-            session_key=sessionkey,
+            session_key=encrypted_session_key,
             ciphertext=ciphertext,
             signature=signature 
         )
-        
         flash(f"Sent message successfully to {sender_name}!")
         return redirect(url_for("send.get_send"))
     

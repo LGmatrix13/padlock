@@ -1,6 +1,5 @@
 import os
 from flask import Flask
-import uuid
 
 from routes.auth import auth_blueprint
 from routes.danger_zone import danger_zone_blueprint
