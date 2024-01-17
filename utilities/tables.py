@@ -39,6 +39,8 @@ class Texts:
         rs = cursor.fetchall()
         return rs
         
+texts = Texts()
+
 class Users:
     def __init__(self) -> None:
         cursor.execute('''
@@ -90,3 +92,5 @@ class Users:
         rs = cursor.fetchall()
         conn.commit()
         return rs[0]
+
+users = Users()
