@@ -10,7 +10,7 @@
   <h2 class="text-xl font-bold">Register</h2>
   <form
     method="POST"
-    action="{{ url_from('auth.post_auth_register') }}"
+    action="{{ url_for('auth.post_auth_register') }}"
     class="space-y-5"
   >
     {{register_form.hidden_tag()}}
@@ -27,7 +27,7 @@
   <h2 class="text-xl font-bold">Login</h2>
   <form
     method="POST"
-    action="{{ url_from('auth.post_auth_login') }}"
+    action="{{ url_for('auth.post_auth_login') }}"
     enctype="multipart/form-data"
     class="space-y-5"
   >
