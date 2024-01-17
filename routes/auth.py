@@ -18,12 +18,19 @@ def get_auth():
 @auth_blueprint.post("/auth/register/")
 def post_auth_register():
     form = RegisterForm()
-    private_key = cb.rsa_gen_keypair()
-    public_key = private_key.public_key()
-    user_id, name, _ = users.create(name=form.name.data, key=cb.rsa_serialize_public_key(public_key=public_key))
-    user_session.create(user_id=user_id, name=name, private_key=cb.rsa_serialize_private_key(private_key=private_key))
-    flash("Successfully created your account! Be sure to save your token for future use.")
-    return redirect(url_for("send.get_send"))
+
+    if form.validate():
+        private_key = cb.rsa_gen_keypair()
+        public_key = private_key.public_key()
+        print(private_key)
+        print(public_key)
+        user_id, name, _ = users.create(name=form.name.data, key=cb.rsa_serialize_public_key(public_key=public_key))
+        user_session.create(user_id=user_id, name=name, private_key=cb.rsa_serialize_private_key(private_key=private_key))
+        flash("Successfully created your account! Be sure to save your token for future use.")
+        return redirect(url_for("send.get_send"))
+    
+    flash("Invalid submission.")
+    return redirect(url_for("auth.get_auth"))
 
 @auth_blueprint.post("/auth/login/")
 def post_auth_login():

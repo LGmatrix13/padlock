@@ -72,7 +72,7 @@ class Users:
         ''', [public_key])
         rs = cursor.fetchall()
         return rs[0]
-    def create(self, name: str, key: str):
+    def create(self, name: str, key: str) -> tuple[int, str, str]:
         data = (name, key)
         print(data)
         cursor.execute('''
