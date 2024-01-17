@@ -1,6 +1,6 @@
 import sqlite3
 
-conn = sqlite3.connect('db.sqlite3', check_same_thread=False)
+conn = sqlite3.connect('db.sqlite3')
 cursor = conn.cursor()
 
 class Texts:
@@ -74,7 +74,6 @@ class Users:
         return rs[0]
     def create(self, name: str, key: str) -> tuple[int, str, str]:
         data = (name, key)
-        print(data)
         cursor.execute('''
             INSERT INTO users
             (name, public_key)
