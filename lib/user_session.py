@@ -9,5 +9,10 @@ class UserSession:
     @property
     def read(self) -> tuple[int, str, str]:
         return session.get("user_id"), session.get("name"), session.get("private_key")
+    
+    def delete(self):
+        del session["user_id"]
+        del session["name"]
+        del session["private_key"]
 
 user_session = UserSession()
