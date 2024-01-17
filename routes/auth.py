@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
 
-from utilities.user_session import user_session
-from utilities.tables import users
-from utilities.decorators import reject_authenticated
-from utilities.forms import LoginForm, RegisterForm
-import utilities.crypto_backend as cb
+from lib.user_session import user_session
+from lib.tables import users
+from lib.decorators import reject_authenticated
+from lib.forms import LoginForm, RegisterForm
+import lib.crypto_backend as cb
 
 auth_blueprint = Blueprint('auth', __name__, template_folder='templates')
 

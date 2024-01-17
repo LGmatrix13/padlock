@@ -1,7 +1,7 @@
 from flask import Blueprint, Response
 
-from utilities.decorators import reject_unauthenticated
-from utilities.user_session import user_session
+from lib.decorators import reject_unauthenticated
+from lib.user_session import user_session
 
 save_token_blueprint = Blueprint('save_token', __name__, template_folder='templates')
 

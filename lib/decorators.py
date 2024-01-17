@@ -2,7 +2,7 @@
 from functools import wraps
 from flask import flash, session, url_for, redirect
 
-from utilities.user_session import user_session
+from lib.user_session import user_session
 
 def reject_unauthenticated(f):
     @wraps(f)

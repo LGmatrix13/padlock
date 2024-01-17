@@ -1,4 +1,4 @@
-from flask import Flask, session
+from flask import Flask
 import uuid
 
 from routes.auth import auth_blueprint
@@ -9,7 +9,6 @@ from routes.texts import texts_blueprint
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = str(uuid.uuid4())
-
 
 app.register_blueprint(auth_blueprint)
 app.register_blueprint(danger_zone_blueprint)

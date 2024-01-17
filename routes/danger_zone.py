@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
 import os
 
-from utilities.tables import users
-from utilities.decorators import reject_unauthenticated
-from utilities.forms import DangerZoneForm
+from lib.tables import users
+from lib.decorators import reject_unauthenticated
+from lib.forms import DangerZoneForm
 
 danger_zone_blueprint = Blueprint('danger_zone', __name__, template_folder='templates')
 

@@ -1,10 +1,10 @@
 from base64 import b64encode
 from flask import Blueprint, render_template, session, redirect, url_for, flash
-from utilities.tables import users, texts
-from utilities.decorators import reject_unauthenticated
-from utilities.forms import SendForm
-import utilities.crypto_backend as cb
-from utilities.user_session import user_session
+from lib.tables import users, texts
+from lib.decorators import reject_unauthenticated
+from lib.forms import SendForm
+import lib.crypto_backend as cb
+from lib.user_session import user_session
 
 send_blueprint = Blueprint('send', __name__, template_folder='templates')
 

@@ -1,10 +1,10 @@
 from base64 import b64decode
 from flask import Blueprint, render_template
 
-from utilities.tables import texts, users
-import utilities.crypto_backend as cb
-from utilities.decorators import reject_unauthenticated
-from utilities.user_session import user_session
+from lib.tables import texts, users
+import lib.crypto_backend as cb
+from lib.decorators import reject_unauthenticated
+from lib.user_session import user_session
 
 texts_blueprint = Blueprint('texts', __name__, template_folder='templates')
 

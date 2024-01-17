@@ -13,8 +13,5 @@ RUN pip install --trusted-host pypi.python.org -r requirements.txt
 # Make port 500 available to the world outside this container
 EXPOSE 5000
 
-# Define environment variable
-ENV MASTER_PASSWORD World
-
 # Run app.py when the container launches
 CMD [ "gunicorn", "-b", "0.0.0.0:5000", "app:app" ]
