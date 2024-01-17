@@ -72,8 +72,9 @@ class Users:
         ''', [public_key])
         rs = cursor.fetchall()
         return rs[0]
-    def create(self, name: str, key):
+    def create(self, name: str, key: str):
         data = (name, key)
+        print(data)
         cursor.execute('''
             INSERT INTO users
             (name, public_key)
