@@ -7,15 +7,15 @@ from lib.decorators import reject_unauthenticated
 from lib.user_session import user_session
 from lib.cache import Cache
 
-texts_blueprint = Blueprint('texts', __name__, template_folder='templates')
+passwords_blueprint = Blueprint('passwords', __name__, template_folder='templates')
 
-@texts_blueprint.get('/')
+@passwords_blueprint.get('/')
 @reject_unauthenticated
-def get_texts():   
+def get_passwords():   
     user_id, name, private_key = user_session.read
     encrypted_texts = texts.read(user_id=user_id)
     decrypted_texts = []
-    cache = Cache(namespace="texts")
+    cache = Cache(namespace="passwords")
     for encrypted_text in encrypted_texts:
         text_id, _, sender_user_id, _, context, nonce, sessionkey, ciphertext, signature = encrypted_text
 
@@ -30,7 +30,7 @@ def get_texts():
                     signature=signature, 
                     message=sessionkey + nonce + ciphertext
                 ),
-                "text": cb.decrypt_message_with_aes_and_rsa(
+                "password": cb.decrypt_message_with_aes_and_rsa(
                     recipient_private_key,
                     sessionkey,
                     nonce,
@@ -42,4 +42,4 @@ def get_texts():
         else:
             decrypted_texts.append(cache.read(text_id))
 
-    return render_template('texts.html', name = name, texts = decrypted_texts)
+    return render_template('passwords.html', name = name, passwords = decrypted_texts)

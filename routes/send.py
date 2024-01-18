@@ -26,7 +26,7 @@ def post_send():
         recipient_user_id, sender_name, sender_public_key = users.read(user_id=form.recipient.data)
         encrypted_session_key, nonce, ciphertext = cb.encrypt_message_with_aes_and_rsa(
             cb.rsa_deserialize_public_key(sender_public_key),
-            form.message.data.encode('utf-8')
+            form.password.data.encode('utf-8')
         )
         signature = cb.RSA_Signature(
             private_key = cb.rsa_deserialize_private_key(private_key),

@@ -1,16 +1,20 @@
 {% from "macros.html" import field, submit %}
 {% extends "base.html" %}
 {% block title %}
-  Send Message
+  Send Password
 {% endblock %}
 {% block content %}
   <section class="space-y-5 mb-10">
-    <h1 class="text-2xl font-bold">Send Message</h1>
+    <h1 class="text-2xl font-bold">Send Password</h1>
+    <p>
+      If you would like to store a password for yourself, select yourself as the
+      recipient.
+    </p>
     <form method="POST" class="space-y-5">
       {{ form.hidden_tag() }}
       {{ field(form.recipient.label, form.recipient, "Contacts") }}
       {{ field(form.context.label, form.context, "Context") }}
-      {{ field(form.message.label, form.message, "Message") }}
+      {{ field(form.password.label, form.password, "Password") }}
       {{ submit(form.submit) }}
     </form>
   </section>

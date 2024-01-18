@@ -14,7 +14,7 @@ class LoginForm(FlaskForm):
 class SendForm(FlaskForm):
     recipient = SelectField("Recipient")
     context = StringField("Context", validators=[InputRequired()])
-    message = TextAreaField("Message", validators=[InputRequired()])
+    password = TextAreaField("Password", validators=[InputRequired()])
     submit = SubmitField("Send")
 
 class DangerZoneForm(FlaskForm):
