@@ -1,8 +1,12 @@
+**pycache**
 .git
 git
 .gitignore
 .vscode
 .prettierrc
+.changeset
 package.json
 pnpm-lock.yaml
 node_modules
+README.md
+tailwind.config.js
