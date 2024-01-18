@@ -35,7 +35,7 @@ python app.py
 ```
 
 ## Setup for Production
-### 1. Build thee docker image
+### 1. Build the docker image
 Inside the root directory is a `dockrfile`. This can be used to quickly provision a container to run padlock in production docker environment. Just run the command:
 ```bash
 docker build -t padlock-image .
@@ -47,6 +47,8 @@ docker run -p 127.0.0.1:5000:5000 --env MASTER_PASSWORD=somepassword --name padl
 ```
 
 ## Scripts for Local Development
+These scripts require you to `npm install` the needed development dependencies.
+
 ### `format`
 `npm run format` uses prettier to format every `html` on the codebase.
 ### `tailwind:build`
