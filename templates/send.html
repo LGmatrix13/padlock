@@ -1,8 +1,6 @@
-{% from "macros.html" import field, submit %} {% extends "base.html" %}
-{%
-  block
-  title
-%}
+{% from "macros.html" import field, submit %}
+{% extends "base.html" %}
+{% block title %}
   Send Message
 {% endblock %}
 {% block content %}
@@ -10,11 +8,8 @@
     <h1 class="text-2xl font-bold">Send Message</h1>
     <form method="POST" class="space-y-5">
       {{ form.hidden_tag() }}
-      {{
-        field(form.recipient.label, form.recipient,
-        "Contacts")
-      }}
-      {{ field(form.context.label, form.context, "Conteext") }}
+      {{ field(form.recipient.label, form.recipient, "Contacts") }}
+      {{ field(form.context.label, form.context, "Context") }}
       {{ field(form.message.label, form.message, "Message") }}
       {{ submit(form.submit) }}
     </form>

@@ -6,16 +6,12 @@
 {% macro field(label, input, placeholder) %}
   <div class="space-y-3">
     {{ label(class = "font-bold") }}
-    {{
-      input(class="bg-gray-200 rounded-lg w-full
-      p-3", placeholder = placeholder)
-    }}
+    {{ input(class="bg-gray-200 rounded-lg w-full p-3", placeholder = placeholder) }}
   </div>
 {% endmacro %}
-{% macro submit(input, title) %}{{
-  input(class = "bg-blue-600
-  text-white w-full rounded-lg p-3")
-}}{% endmacro %}
+{% macro submit(input, title) %}
+  {{ input(class = "bg-blue-600 text-white w-full rounded-lg p-3") }}
+{% endmacro %}
 {% macro text(text_content) %}
   <button onclick="copyToClipboard(this)" value="{{ text.text }}">
     <div class="border-2 p-5 rounded-lg flex items-center">

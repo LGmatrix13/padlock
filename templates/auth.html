@@ -1,8 +1,6 @@
-{% from "macros.html" import field, submit %} {% extends "base.html" %}
-{%
-  block
-  title
-%}
+{% from "macros.html" import field, submit %}
+{% extends "base.html" %}
+{% block title %}
   Setup Certification
 {% endblock %}
 {% block content %}
@@ -21,10 +19,7 @@
       class="space-y-5"
     >
       {{ register_form.hidden_tag() }}
-      {{
-        field(register_form.name.label,
-        register_form.name, "Name")
-      }}
+      {{ field(register_form.name.label, register_form.name, "Name") }}
       {{ submit(register_form.submit) }}
     </form>
   </section>
