@@ -34,7 +34,7 @@ To start the server, cd to the root directory and run the `app.py` file:
 python app.py
 ```
 
-## Setup for Production
+## Setup for Production ⚡
 ### 1. Build the docker image
 Inside the root directory is a `dockrfile`. This can be used to quickly provision a container to run padlock in production docker environment. Just run the command:
 ```bash
@@ -46,7 +46,7 @@ Run the container on port `5000` and setup the `MASTER_PASSWORD` env. This varia
 docker run -p 127.0.0.1:5000:5000 --env MASTER_PASSWORD=somepassword --name padlock-container -it padlock-image
 ```
 
-## Scripts for Local Development
+## Scripts for Local Development 🧱
 These scripts require you to `npm install` the needed development dependencies.
 
 ### `format`
