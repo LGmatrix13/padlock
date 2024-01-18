@@ -2,3 +2,7 @@
 git
 .gitignore
 .vscode
+.prettierrc
+package.json
+pnpm-lock.yaml
+node_modules

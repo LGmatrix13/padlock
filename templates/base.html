@@ -1,9 +1,15 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" type="text/css" href="/static/styles/base.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     {% block script %}{% endblock %}
     <title>{% block title %}{% endblock %}</title>
   </head>
@@ -97,14 +103,16 @@
     </header>
     <main class="max-w-screen-lg mx-auto grow px-7 w-full">
       {% if get_flashed_messages() %}
-      <section class="space-y-5 mb-10">
-        {% for message in get_flashed_messages() %}
-        <div class="p-5 rounded-lg border-2">
-          <p>{{ message }}</p>
-        </div>
-        {% endfor %}
-      </section>
-      {% endif %} {% block content %} {% endblock %}
+        <section class="space-y-5 mb-10">
+          {% for message in get_flashed_messages() %}
+            <div class="p-5 rounded-lg border-2">
+              <p>{{ message }}</p>
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+      {% block content %}
+      {% endblock %}
     </main>
     <footer class="border-t-2">
       <div

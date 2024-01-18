@@ -1,25 +1,22 @@
-{% extends "base.html" %} {% block title %}Send Message{% endblock %} {%block
-content %}
-<section class="space-y-5 mb-10">
-  <h1 class="text-2xl font-bold">Send Message</h1>
-  <form method="POST" class="space-y-5">
-    {{form.hidden_tag()}}
-    <div class="space-y-3">
-      {{form.recipient.label(class = "font-bold")}}
-      {{form.recipient(class="bg-gray-200 rounded-lg w-full p-3", placeholder =
-      "Contacts")}}
-    </div>
-    <div class="space-y-3">
-      {{form.context.label(class = "font-bold")}}
-      {{form.context(class="bg-gray-200 rounded-lg w-full p-3", placeholder =
-      "Context")}}
-    </div>
-    <div class="space-y-3">
-      {{form.message.label(class = "font-bold")}}
-      {{form.message(class="bg-gray-200 rounded-lg w-full p-3", placeholder =
-      "Message")}}
-    </div>
-    {{form.submit(class = "bg-blue-600 text-white w-full rounded-lg p-3")}}
-  </form>
-</section>
+{% from "macros.html" import field, submit %} {% extends "base.html" %}
+{%
+  block
+  title
+%}
+  Send Message
+{% endblock %}
+{% block content %}
+  <section class="space-y-5 mb-10">
+    <h1 class="text-2xl font-bold">Send Message</h1>
+    <form method="POST" class="space-y-5">
+      {{ form.hidden_tag() }}
+      {{
+        field(form.recipient.label, form.recipient,
+        "Contacts")
+      }}
+      {{ field(form.context.label, form.context, "Conteext") }}
+      {{ field(form.message.label, form.message, "Message") }}
+      {{ submit(form.submit) }}
+    </form>
+  </section>
 {% endblock %}

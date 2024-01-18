@@ -1,44 +1,44 @@
-{% extends "base.html" %} {% block title %}Setup Certification{% endblock %}
-{%block content %}
-<section class="space-y-5 mb-10">
-  <h1 class="text-2xl font-bold">Authenticate</h1>
-  <p>
-    Either create a account or provide your token if you already have an account
-  </p>
-</section>
-<section class="space-y-5 mb-10">
-  <h2 class="text-xl font-bold">Register</h2>
-  <form
-    method="POST"
-    action="{{ url_for('auth.post_auth_register') }}"
-    class="space-y-5"
-  >
-    {{register_form.hidden_tag()}}
-    <div class="space-y-3">
-      {{register_form.name.label(class = "font-bold")}}
-      {{register_form.name(class="bg-gray-200 rounded-lg w-full p-3",
-      placeholder = "Name")}}
-    </div>
-    {{register_form.submit(class = "bg-blue-600 text-white w-full rounded-lg
-    p-3")}}
-  </form>
-</section>
-<section class="space-y-5 mb-10">
-  <h2 class="text-xl font-bold">Login</h2>
-  <form
-    method="POST"
-    action="{{ url_for('auth.post_auth_login') }}"
-    enctype="multipart/form-data"
-    class="space-y-5"
-  >
-    {{login_form.hidden_tag()}}
-    <div class="space-y-3">
-      {{login_form.file.label(class = "font-bold")}}
-      {{login_form.file(class="bg-gray-200 rounded-lg w-full p-3", placeholder =
-      "Name")}}
-    </div>
-    {{login_form.submit(class = "bg-blue-600 text-white w-full rounded-lg
-    p-3")}}
-  </form>
-</section>
+{% from "macros.html" import field, submit %} {% extends "base.html" %}
+{%
+  block
+  title
+%}
+  Setup Certification
+{% endblock %}
+{% block content %}
+  <section class="space-y-5 mb-10">
+    <h1 class="text-2xl font-bold">Authenticate</h1>
+    <p>
+      Either create a account or provide your token if you already have an
+      account
+    </p>
+  </section>
+  <section class="space-y-5 mb-10">
+    <h2 class="text-xl font-bold">Register</h2>
+    <form
+      method="POST"
+      action="{{ url_for('auth.post_auth_register') }}"
+      class="space-y-5"
+    >
+      {{ register_form.hidden_tag() }}
+      {{
+        field(register_form.name.label,
+        register_form.name, "Name")
+      }}
+      {{ submit(register_form.submit) }}
+    </form>
+  </section>
+  <section class="space-y-5 mb-10">
+    <h2 class="text-xl font-bold">Login</h2>
+    <form
+      method="POST"
+      action="{{ url_for('auth.post_auth_login') }}"
+      enctype="multipart/form-data"
+      class="space-y-5"
+    >
+      {{ login_form.hidden_tag() }}
+      {{ field(login_form.file.label, login_form.file) }}
+      {{ submit(login_form.submit) }}
+    </form>
+  </section>
 {% endblock %}

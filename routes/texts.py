@@ -20,7 +20,6 @@ def get_texts():
         text_id, _, sender_user_id, _, context, nonce, sessionkey, ciphertext, signature = encrypted_text
 
         if cache.read(text_id) is None:
-            print("ran")
             sender_user_id, sender_name, sender_public_key = users.read(sender_user_id)
             recipient_private_key = cb.rsa_deserialize_private_key(private_key)
             decrypted_text = {
