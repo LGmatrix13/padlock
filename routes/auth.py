@@ -40,7 +40,7 @@ def post_auth_login():
         user_id, name, public_key = users.read_from_public_key(public_key=cb.rsa_serialize_public_key(public_key=public_key))
         user_session.create(user_id=user_id, name=name, private_key=token)    
         flash(f"Welcome back, {name}!")
-        return redirect(url_for("texts.get_texts"))
+        return redirect(url_for("passwords.get_passwords"))
     except Exception:
         flash("Invalid token.")
         return redirect(url_for("auth.get_auth"))

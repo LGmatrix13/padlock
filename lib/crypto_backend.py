@@ -4,23 +4,19 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.serialization import load_pem_public_key, load_pem_private_key
-
-import secrets # Use this for generating random byte strings (keys, etc.)
-from time import perf_counter
-from inspect import cleandoc # Cleans up indenting in multi-line strings (""")
 from os import urandom
 
 #
 # Returns: An rsa.RSAPrivateKey object (which contains both the private key
 #   and its corresponding public key; use .public_key() to obtain it).
 #
-RSA_KEY_BITS = 4096
+RSA_KEY_BITS = 1024
 RSA_PUBLIC_EXPONENT = 65537
 def rsa_gen_keypair():
     return rsa.generate_private_key(
             key_size = RSA_KEY_BITS,
             public_exponent = RSA_PUBLIC_EXPONENT
-            )
+        )
 
 #
 # Argument: An rsa.RSAPrivateKey object
@@ -212,125 +208,6 @@ def decrypt_message_with_aes_and_rsa(private_key: rsa.RSAPrivateKey, encrypted_s
     decrypted_session_key = rsa_decrypt(private_key, encrypted_session_key)
     return aes_decrypt(key=decrypted_session_key, nonce=nonce, ciphertext=ciphertext)
 
-#
-# Benchmark the following operations:
-#
-#   1. Generate a 4096-bit RSA keypair
-#
-#   2. Generate an AES-256 session key
-#
-#   3. Encrypt 446 bytes (3568 bits) of data using RSA-4096
-#           Why 446 bytes? This is a limitation of the way we are using the
-#           RSA algorithm here: it cannot encrypt more than a single block
-#           (4096 bits) of data at a time. AES has the same limitation, which
-#           we deal with by using a block cipher mode to turn it into a
-#           stream cipher. But the RSA implementation in OpenSSL (which is
-#           used behind the scenes by the cryptography library) only supports
-#           encrypting a single block at a time. Generally, this isn't a
-#           problem in real-world scenarios, since we're only interested in
-#           encrpyting a (much shorter) AES session key or a hash signature.
-#           
-#           Note also: we are further limited to 446 bytes (instead of 512
-#           bytes, which would be the full 4096 bits) because of the OAEP
-#           padding scheme we are using with RSA. OAEP has overhead of
-#           2*<hash function length> + 2 bytes; since we are using SHA-256
-#           for our hash function, this overhead is 2*32 + 2 = 66 bytes,
-#           leaving 512 - 66 = 446 bytes free for our message.
-#
-#           AES-CTR, of course, has no problem encrypting an arbitrarily long
-#           message, so for an apples-to-apples comparison we use the same
-#           length message in our AES benchmark (below).
-#
-#   4. Encrypt 446 bytes (3568 bits) of data using AES-256-CTR
-#
-# Each operation will be run NUM_BENCHMARK_RUNS times, with the average
-# reported.
-#
-# Returns: A multi-line string summarizing the results of the benchmarks (in
-# a human-readable format for display to the user).
-#
-def benchmark():
-    NUM_BENCHMARK_RUNS = 20
-    TEST_DATA_SIZE = 446
-
-    elapsed_begin = perf_counter()
-
-    # Benchmark #1: generating a 4096-bit RSA keypair
-    #
-    # N.B.: We save a copy of the key generated in the last run so we can use
-    # it for benchmark #3.
-    rsa_keygen_results = []
-    for i in range(0, NUM_BENCHMARK_RUNS):
-        before = perf_counter()
-        rsa_private_key = rsa_gen_keypair()
-        after = perf_counter()
-
-        rsa_keygen_results.append(after - before)
-
-    rsa_keygen_avg = sum(rsa_keygen_results) / len(rsa_keygen_results)
-
-    # Benchmark #2: generating a 256-bit AES session key
-    #
-    # N.B.: We save a copy of the key generated in the last run so we can use
-    # it for benchmark #4.
-    aes_keygen_results = []
-    for i in range(0, NUM_BENCHMARK_RUNS):
-        before = perf_counter()
-        aes_session_key = secrets.token_bytes(32) # 32 bytes = 256 bits
-        after = perf_counter()
-
-        aes_keygen_results.append(after - before)
-
-    aes_keygen_avg = sum(aes_keygen_results) / len(aes_keygen_results)
-
-    # Generate TEST_DATA_SIZE bytes of random data to use as our plaintext
-    # for the encryption benchmarks.
-    plaintext = secrets.token_bytes(TEST_DATA_SIZE)
-
-    # Benchmark #3: encrypting data using RSA
-    rsa_encrypt_results = []
-    rsa_public_key = rsa_private_key.public_key()
-    for i in range(0, NUM_BENCHMARK_RUNS):
-        before = perf_counter()
-        rsa_encrypt(rsa_public_key, plaintext)
-        after = perf_counter()
-
-        rsa_encrypt_results.append(after - before)
-
-    rsa_encrypt_avg = sum(rsa_encrypt_results) / len(rsa_encrypt_results)
-
-    # Generate a random 128-bit (16-byte) nonce for use in our AES encryption
-    # benchmark.
-    nonce = secrets.token_bytes(16)
-
-    # Benchmark #4: encrypting data using AES-256-CTR
-    aes_encrypt_results = []
-    for i in range(0, NUM_BENCHMARK_RUNS):
-        before = perf_counter()
-        aes_encrypt(aes_session_key, nonce, plaintext)
-        after = perf_counter()
-
-        aes_encrypt_results.append(after - before)
-
-    aes_encrypt_avg = sum(aes_encrypt_results) / len(aes_encrypt_results)
-
-    elapsed_end = perf_counter()
-
-    # Output a human-readable report of the results (printing the floats to 6
-    # significant digits).
-    return cleandoc("""
-    Benchmark results (average of {num_runs} runs each):
-
-    #1 (Generate a 4096-bit RSA keypair):             {result1:.6g} seconds
-    #2 (Generate a 256-bit AES session key):          {result2:.6g} seconds
-    #3 (Encrypt {data_size} bytes of data using RSA-4096):    {result3:.6g} seconds
-    #4 (Encrypt {data_size} bytes of data using AES-256-CTR): {result4:.6g} seconds
-
-    Total elapsed time: {elapsed:.6g} seconds
-    """).format(num_runs = NUM_BENCHMARK_RUNS, data_size = TEST_DATA_SIZE,
-                result1 = rsa_keygen_avg, result2 = aes_keygen_avg,
-                result3 = rsa_encrypt_avg, result4 = aes_encrypt_avg,
-                elapsed = elapsed_end - elapsed_begin)
 
 def RSA_Signature(private_key: rsa.RSAPrivateKey, message: bytes):
     return private_key.sign(

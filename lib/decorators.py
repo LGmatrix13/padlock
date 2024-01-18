@@ -19,6 +19,6 @@ def reject_authenticated(f):
     def decorated_function(*args, **kwargs):
         if session.get('user_id') is not None:
             flash("You are already authenticated")
-            return redirect(url_for("texts.get_texts"))
+            return redirect(url_for("passwords.get_passwords"))
         return f(*args, **kwargs)
     return decorated_function
