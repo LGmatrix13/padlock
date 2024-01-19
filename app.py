@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, redirect
 
 from routes.auth import auth_blueprint
 from routes.danger_zone import danger_zone_blueprint
@@ -17,6 +17,10 @@ app.register_blueprint(save_token_blueprint)
 app.register_blueprint(send_blueprint)
 app.register_blueprint(passwords_blueprint)
 app.register_blueprint(logout_blueprint)
+
+@app.get("/about/")
+def get_about():
+    return redirect(location="https://github.com/LGmatrix13/padlock/blob/main/README.md", code=308)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
