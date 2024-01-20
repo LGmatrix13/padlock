@@ -2,7 +2,7 @@
 import sqlite3
 from flask import g
 
-DATABASE = "db.sqlite3"
+DATABASE = "./data/db.sqlite3"
 
 def connect() -> tuple[sqlite3.Connection, sqlite3.Cursor]:
     conn = sqlite3.connect(DATABASE)
